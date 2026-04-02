@@ -8,13 +8,13 @@ Official library for the ROMAN operator.
 
 ROMAN (ROuting Multiscale representAtioN) is a deterministic front-end operator for time series. It maps temporal scale and coarse temporal position into an explicit channel structure while reducing sequence length. Concretely, it builds an anti-aliased multiscale pyramid, extracts fixed-length windows from each scale, and stacks them as pseudochannels so standard convolutional backbones can operate on a more explicitly multiscale and coarse-position-aware representation.
 
-This repository is intentionally focused on the operator itself and on simple end-user usage. The full benchmark scripts, synthetic experiments, figure generation code, and appendix-table pipeline belong in the companion reproduction repository.
-
 ## Why ROMAN?
 
-ROMAN is not a classifier and it is not intended as an architecture replacement. It is a representation operator that can be inserted before standard convolutional backbones such as MiniRocket, MultiRocket, CNNClassifier, or FCNClassifier. In the terminology of the paper, ROMAN modifies the inductive bias of the downstream model by rerouting temporal structure before that model sees the input.
+ROMAN is not a classifier and it is not intended as an architecture replacement. It is a representation operator that can be inserted before standard convolutional backbones such as MiniRocket, MultiRocket, CNNClassifier, or FCNClassifier. ROMAN modifies the inductive bias of the downstream model by rerouting temporal structure before that model sees the input.
 
-In practice, ROMAN:
+The ROMAN operator is designed to reduce temporal invariance, make temporal pooling implicitly coarse-position-aware, expose multiscale interactions through channel mixing, and improve efficiency by shortening the processed time axis.
+
+## What does ROMAN do?
 
 - creates anti-aliased downsampled views of the same series
 - extracts fixed-length overlapping windows at each scale
@@ -22,7 +22,9 @@ In practice, ROMAN:
 - preserves a familiar `(n_instances, n_channels, n_timepoints)` tensor shape
 - shortens the processed temporal axis from `L` to `L_base`
 
-This can reduce temporal invariance, make temporal pooling implicitly coarse-position-aware, expose multiscale interactions through channel mixing, and often improve efficiency by shortening the processed time axis. As emphasized in the paper, this is a controlled representation change rather than a claim that larger `S` is always better.
+The only relevant parameter for the operator is `S`. Intuitively, `S` controls how strong the routing is. `S=1` is exactly the original input, while larger values of `S` add coarser scales, shorten the processed time axis, and create more pseudochannels. In practice, increasing `S` makes the representation more explicitly multiscale and coarse-position-aware, but also increases the channel dimension.
+
+![ROMAN scheme](images/ROMAN_scheme.jpg)
 
 ## Installation
 
@@ -63,8 +65,6 @@ X = np.random.randn(32, 3, 512).astype(np.float32)
 roman = RomanOperator(
     S=3,
     alpha=0.5,
-    min_timesteps_per_channel=32,
-    normalization=True,
 )
 
 Z = roman.fit_transform(X)
