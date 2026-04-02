@@ -26,19 +26,27 @@ This can reduce temporal invariance, make temporal pooling implicitly coarse-pos
 
 ## Installation
 
-Install the core package:
+For regular use, install directly from GitHub:
 
 ```bash
+pip install "git+https://github.com/gon-uri/ROMAN.git"
+```
+
+For local development:
+
+```bash
+git clone https://github.com/gon-uri/ROMAN.git
+cd ROMAN
 pip install -e .
 ```
 
-If you also want the notebook dependencies:
+If you also want the notebook dependencies during local development:
 
 ```bash
 pip install -e ".[examples]"
 ```
 
-If you want to use the plotting utilities in `RomanOperator.plot_relevance`, install:
+If you want to use the plotting utilities in `RomanOperator.plot_relevance` during local development, install:
 
 ```bash
 pip install -e ".[plot]"
