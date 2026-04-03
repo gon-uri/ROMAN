@@ -4,7 +4,7 @@ Official library for the ROMAN operator.
 
 **Paper:** `ROMAN: A Multiscale Routing Operator for Convolutional Time Series Models`  
 **Author(s):** `Gonzalo Uribarri`  
-**Paper link:** `[Add link here after acceptance]`
+**Paper link:** `[Link will be added after publication]`
 
 ROMAN (ROuting Multiscale representAtioN) is a deterministic front-end operator for time series. It maps temporal scale and coarse temporal position into an explicit channel structure while reducing sequence length. Concretely, it builds an anti-aliased multiscale pyramid, extracts fixed-length windows from each scale, and stacks them as pseudochannels so standard convolutional backbones can operate on a more explicitly multiscale and coarse-position-aware representation.
 
@@ -80,14 +80,14 @@ For a typical workflow, fit ROMAN on the training set, transform both train and 
 
 ## Example Notebook
 
-The notebook in [`notebooks/handmovementdirection_minirocket_demo.ipynb`](notebooks/handmovementdirection_minirocket_demo.ipynb) shows a full MiniRocket example on the UEA `HandMovementDirection` dataset:
+The notebook in [`notebooks/uea_example.ipynb`](notebooks/uea_example.ipynb) shows a full MiniRocket example on the UEA `EthanolConcentration` dataset:
 
 - baseline MiniRocket on the original input
-- MiniRocket on ROMAN-transformed input
+- MiniRocket on ROMAN-transformed input with `S=4`
 - original channel count versus ROMAN pseudochannel count
 - a small side-by-side performance summary
 
-The example uses `S=3`, which is the strongest MiniRocket ROMAN setting for this dataset in the appendix tables from the paper artifacts available in the reproduction codebase.
+The example uses `S=4`, which is the strongest MiniRocket ROMAN setting for this dataset in the appendix tables from the paper artifacts available in the reproduction codebase. The notebook also leaves a few other promising UEA datasets as commented suggestions for users who want to explore additional cases.
 
 The notebook also sets a few conservative Numba environment defaults before importing MiniRocket, which helps on constrained notebook or shared-server setups. If the dataset is not already cached locally, `sktime` will download it on first use.
 
@@ -99,7 +99,7 @@ ROMAN/
 ├── LICENSE
 ├── pyproject.toml
 ├── notebooks/
-│   └── handmovementdirection_minirocket_demo.ipynb
+│   └── uea_example.ipynb
 └── src/
     └── roman/
         ├── __init__.py
