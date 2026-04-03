@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/LOGO_ROMAN.png" alt="ROMAN logo" width="170">
+</p>
+
 # ROMAN
 
 Official library for the ROMAN operator.
@@ -174,3 +178,7 @@ If you use ROMAN in your work, please cite the paper. The venue and final paper 
 ## License
 
 This project is released under the MIT License.
+
+<p align="center">
+  <img src="images/LOGO_ROMAN.png" alt="ROMAN logo" width="95">
+</p>
