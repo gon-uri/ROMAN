@@ -8,7 +8,7 @@ Official library for the ROMAN operator.
 
 **Paper:** `ROMAN: A Multiscale Routing Operator for Convolutional Time Series Models`  
 **Author(s):** `Gonzalo Uribarri`  
-**Paper link:** `[Link will be added after publication]`
+**Paper link:** [https://arxiv.org/abs/2604.02577](https://arxiv.org/abs/2604.02577)
 
 ROMAN (ROuting Multiscale representAtioN) is a deterministic front-end operator for time series. It maps temporal scale and coarse temporal position into an explicit channel structure while reducing sequence length. Concretely, it builds an anti-aliased multiscale pyramid, extracts fixed-length windows from each scale, and stacks them as pseudochannels so standard convolutional backbones can operate on a more explicitly multiscale and coarse-position-aware representation.
 
