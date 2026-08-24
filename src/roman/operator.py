@@ -301,8 +301,8 @@ class RomanOperator(BaseEstimator, TransformerMixin):
       dropped before decimation.
     """
 
-    alpha: float
-    min_timesteps_per_channel: int
+    alpha: float = 0.5
+    min_timesteps_per_channel: int = 32
     normalization: bool = True
     window_rule: str = "overlap"
     window_surplus: int = 0
@@ -460,7 +460,9 @@ class RomanOperator(BaseEstimator, TransformerMixin):
         if self.normalization:
             X3 = self._apply_channel_norm(X3, self.mean_x_, self.std_x_)
         else:
-            np.nan_to_num(X3, copy=False, nan=0.0)
+            # Copy so NaN replacement never writes into the caller's array
+            # (X3 can alias the input when it is already float32 and 3D).
+            X3 = np.nan_to_num(X3, copy=True, nan=0.0)
 
         total_windows = int(sum(self.windows_))
         Z = np.empty(
