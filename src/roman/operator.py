@@ -53,8 +53,6 @@ def choose_S_roman(
     max_pseudochannels: Optional[int] = None,
     N: Optional[int] = None,
     H: Optional[float] = None,
-    window_rule: str = "overlap",
-    window_surplus: int = 0,
     S_max: Optional[int] = None,
 ) -> Tuple[int, List[int], List[int], int]:
     """
@@ -82,7 +80,8 @@ def choose_S_roman(
     C : int
         Number of original input channels.
     alpha : float
-        Overlap fraction in `[0, 1)`. Used when `window_rule="overlap"`.
+        Overlap fraction in `[0, 1)` controlling how densely each scale is
+        tiled by windows.
     L : int
         Original time-series length.
     min_timesteps_per_channel : int
@@ -96,11 +95,6 @@ def choose_S_roman(
         transform. Required together with `H` in coverage mode.
     H : float, optional
         Minimum expected coverage per pseudochannel. Required together with `N`.
-    window_rule : {"overlap", "surplus"}, default="overlap"
-        Rule used to decide how many windows are extracted at each scale.
-    window_surplus : int, default=0
-        Extra number of windows added on top of the minimum coverage when using
-        `window_rule="surplus"`.
     S_max : int, optional
         Optional hard cap on the explored number of scales.
 
@@ -123,10 +117,6 @@ def choose_S_roman(
         raise ValueError("L must be >= 1")
     if min_timesteps_per_channel <= 0:
         raise ValueError("min_timesteps_per_channel must be >= 1")
-    if window_rule not in {"overlap", "surplus"}:
-        raise ValueError("window_rule must be 'overlap' or 'surplus'")
-    if window_surplus < 0:
-        raise ValueError("window_surplus must be >= 0")
     if S_max is not None and S_max < 1:
         raise ValueError("S_max must be >= 1")
 
@@ -176,28 +166,23 @@ def choose_S_roman(
             ),
             stacklevel=2,
         )
-        W_1 = 1 if window_rule == "overlap" else (1 + window_surplus)
-        return 1, [L], [W_1], L
+        return 1, [L], [1], L
 
     def compute_windows_for_S(num_scales: int, L_base: int) -> List[int]:
         windows: List[int] = []
         for s in range(1, num_scales + 1):
             Ls = lengths[s - 1]
-            if window_rule == "overlap":
-                if Ls <= L_base:
-                    windows.append(1)
-                else:
-                    denom = (1.0 - alpha) * float(L_base)
-                    extra = int(math.ceil((Ls - L_base) / max(1e-12, denom)))
-                    windows.append(1 + extra)
+            if Ls <= L_base:
+                windows.append(1)
             else:
-                min_windows = int(math.ceil(Ls / float(L_base)))
-                windows.append(min_windows + window_surplus)
+                denom = (1.0 - alpha) * float(L_base)
+                extra = int(math.ceil((Ls - L_base) / max(1e-12, denom)))
+                windows.append(1 + extra)
         return windows
 
     best_S = 1
     best_lengths: List[int] = [L]
-    best_windows: List[int] = [1 if window_rule == "overlap" else (1 + window_surplus)]
+    best_windows: List[int] = [1]
     best_L_base = L
     constraint_met = False
 
@@ -306,8 +291,6 @@ class RomanOperator(BaseEstimator, TransformerMixin):
     alpha: float = 0.5
     min_timesteps_per_channel: int = 32
     normalization: bool = True
-    window_rule: str = "overlap"
-    window_surplus: int = 0
     S_max: Optional[int] = None
 
     S: Optional[int] = None
@@ -382,8 +365,6 @@ class RomanOperator(BaseEstimator, TransformerMixin):
             max_pseudochannels=max_pseudochannels,
             N=N,
             H=H,
-            window_rule=self.window_rule,
-            window_surplus=self.window_surplus,
             S_max=self.S_max,
         )
 
@@ -481,12 +462,6 @@ class RomanOperator(BaseEstimator, TransformerMixin):
                     out_idx += num_channels
 
         return Z
-
-    def fit_transform(
-        self, X: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """Fit ROMAN on `X` and immediately transform the same dataset."""
-        return self.fit(X, y=y).transform(X)
 
     def map_relevance(self, relevance: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -780,7 +755,10 @@ class RomanOperator(BaseEstimator, TransformerMixin):
             raise ValueError("W must be >= 1")
 
         if win_len > L:
-            return np.array([0], dtype=np.int32), np.array([L], dtype=np.int32)
+            # Cannot happen for windows produced by choose_S_roman, where
+            # win_len is the coarsest (shortest) scale length. A short window
+            # here would silently break the fixed-length output contract.
+            raise ValueError("win_len must not exceed L")
 
         if W == 1 or L == win_len:
             return np.array([0], dtype=np.int32), np.array([win_len], dtype=np.int32)
