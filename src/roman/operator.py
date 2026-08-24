@@ -392,7 +392,7 @@ class RomanOperator(BaseEstimator, TransformerMixin):
             max_pseudochannels = None
             S_exact = None
 
-        X3 = self._ensure_3d(X)
+        X3 = self._ensure_3d(X, warn=True)
         _, C, L = X3.shape
 
         S_out, lengths, windows, L_base = choose_S_roman(
@@ -572,7 +572,7 @@ class RomanOperator(BaseEstimator, TransformerMixin):
         cmap: str = "viridis",
         save_path: Optional[str] = None,
         title: Optional[str] = None,
-    ) -> None:
+    ):
         """
         Plot a relevance heatmap and simple marginals.
 
@@ -591,6 +591,13 @@ class RomanOperator(BaseEstimator, TransformerMixin):
             Optional path used to save the figure.
         title : str, optional
             Figure title. When omitted, a default ROMAN title is used.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            The created figure. It is returned rather than shown, so it
+            renders inline in notebooks; call `fig.show()` or
+            `matplotlib.pyplot.show()` from scripts.
         """
         if title is None:
             title = f"ROMAN Positional & {ylabel} Relevance"
@@ -616,7 +623,10 @@ class RomanOperator(BaseEstimator, TransformerMixin):
             ax = fig.add_subplot(111)
             x_vals = np.arange(L)
             y_vals = time_importance
-            norm = plt.Normalize(y_vals.min(), y_vals.max())
+            y_min, y_max = float(y_vals.min()), float(y_vals.max())
+            if y_min == y_max:  # constant relevance: avoid a degenerate norm
+                y_max = y_min + 1.0
+            norm = plt.Normalize(y_min, y_max)
             color_map = plt.get_cmap(cmap)
 
             ax.plot(x_vals, y_vals, color="black", linewidth=1.2, alpha=0.8)
@@ -633,7 +643,9 @@ class RomanOperator(BaseEstimator, TransformerMixin):
             ax.set_xlabel("Time Steps", fontsize=12, fontweight="bold")
             ax.set_ylabel("Relevance Score", fontsize=12, fontweight="bold")
             ax.set_xlim(0, L - 1)
-            ax.set_ylim(0, y_vals.max() * 1.05)
+            pad = 0.05 * (y_max - y_min)
+            lower = min(0.0, y_min) - (pad if y_min < 0 else 0.0)
+            ax.set_ylim(lower, y_max + pad)
             ax.grid(True, linestyle="--", alpha=0.5)
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
@@ -642,9 +654,8 @@ class RomanOperator(BaseEstimator, TransformerMixin):
                 fig.suptitle(title, fontsize=14, fontweight="bold", y=0.96)
             plt.tight_layout()
             if save_path:
-                plt.savefig(save_path, dpi=300, bbox_inches="tight")
-            plt.show()
-            return
+                fig.savefig(save_path, dpi=300, bbox_inches="tight")
+            return fig
 
         channel_importance = relevance_map.sum(axis=1)
         gs = gridspec.GridSpec(
@@ -705,22 +716,23 @@ class RomanOperator(BaseEstimator, TransformerMixin):
         if title:
             fig.suptitle(title, fontsize=14, fontweight="bold", y=0.96)
         if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches="tight")
-        plt.show()
+            fig.savefig(save_path, dpi=300, bbox_inches="tight")
+        return fig
 
     @staticmethod
-    def _ensure_3d(X: np.ndarray) -> np.ndarray:
+    def _ensure_3d(X: np.ndarray, warn: bool = False) -> np.ndarray:
         if not isinstance(X, np.ndarray):
             X = np.asarray(X)
         if X.ndim == 2:
-            warnings.warn(
-                (
-                    "Input is 2D, so ROMAN assumes shape "
-                    "(n_instances, n_timepoints) and reshapes it to "
-                    "(n_instances, 1, n_timepoints)."
-                ),
-                stacklevel=2,
-            )
+            if warn:
+                warnings.warn(
+                    (
+                        "Input is 2D, so ROMAN assumes shape "
+                        "(n_instances, n_timepoints) and reshapes it to "
+                        "(n_instances, 1, n_timepoints)."
+                    ),
+                    stacklevel=2,
+                )
             return X[:, None, :]
         if X.ndim == 3:
             return X

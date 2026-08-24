@@ -129,11 +129,14 @@ def test_choose_s_roman_matches_fitted_operator():
 # ---------------------------------------------------------- input handling
 
 
-def test_2d_input_warns_and_is_treated_as_univariate():
+def test_2d_input_warns_once_and_is_treated_as_univariate():
+    import warnings
+
     X2 = RNG.standard_normal((8, 256)).astype(np.float32)
     with pytest.warns(UserWarning, match="2D"):
         op = RomanOperator(S=2).fit(X2)
-    with pytest.warns(UserWarning, match="2D"):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # transform must not warn again
         Z = op.transform(X2)
     assert Z.shape[0] == 8 and op.C_ == 1
 
