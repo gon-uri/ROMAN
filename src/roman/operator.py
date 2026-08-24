@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.exceptions import NotFittedError
 
 
 def _mu_k(num_channels: int) -> float:
@@ -312,21 +313,11 @@ class RomanOperator(BaseEstimator, TransformerMixin):
     max_pseudochannels: Optional[int] = None
     N: Optional[int] = None
     H: Optional[float] = None
-
-    S_: Optional[int] = None
-    L_: Optional[int] = None
-    C_: Optional[int] = None
-    L_base_: Optional[int] = None
-    lengths_: Optional[List[int]] = None
-    windows_: Optional[List[int]] = None
-    starts_: Optional[List[np.ndarray]] = None
-    ends_: Optional[List[np.ndarray]] = None
-    n_pseudochannels_: Optional[int] = None
-
-    mean_x_: Optional[np.ndarray] = None
-    std_x_: Optional[np.ndarray] = None
-
     eps: float = 1e-8
+
+    # Fitted attributes (set by `fit`, never passed to the constructor):
+    # S_, L_, C_, L_base_, lengths_, windows_, starts_, ends_,
+    # n_pseudochannels_, mean_x_, std_x_
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None) -> "RomanOperator":
         """
@@ -738,8 +729,8 @@ class RomanOperator(BaseEstimator, TransformerMixin):
         return X_norm
 
     def _check_is_fitted(self) -> None:
-        if self.S_ is None or self.starts_ is None or self.ends_ is None:
-            raise RuntimeError("RomanOperator is not fitted. Call fit(X) first.")
+        if getattr(self, "S_", None) is None:
+            raise NotFittedError("RomanOperator is not fitted. Call fit(X) first.")
 
     @staticmethod
     def _pad_to_even_last(X: np.ndarray) -> np.ndarray:
