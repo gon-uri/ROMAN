@@ -26,7 +26,7 @@ The ROMAN operator is designed to reduce temporal invariance, make temporal pool
 - preserves a familiar `(n_instances, n_channels, n_timepoints)` tensor shape
 - shortens the processed temporal axis from `L` to `L_base`
 
-The only relevant parameter for the operator is `S`. Intuitively, `S` controls how strong the routing is. `S=1` is exactly the original input, while larger values of `S` add coarser scales, shorten the processed time axis, and create more pseudochannels. In practice, increasing `S` makes the representation more explicitly multiscale and coarse-position-aware, but also increases the channel dimension.
+The central parameter of the operator is `S`. Intuitively, `S` controls how strong the routing is. `S=1` leaves the input untouched, while larger values of `S` add coarser scales, shorten the processed time axis, and create more pseudochannels. In practice, increasing `S` makes the representation more explicitly multiscale and coarse-position-aware, but also increases the channel dimension.
 
 ![ROMAN scheme](images/ROMAN_scheme.jpg)
 
@@ -82,6 +82,18 @@ print("Windows per scale:", roman.windows_)
 
 For a typical workflow, fit ROMAN on the training set, transform both train and test sets, and then pass the transformed tensors to your downstream classifier. The `S=1` case returns the input unchanged (up to the optional channel normalization; set `normalization=False` for the exact identity), so varying `S` gives a controlled family of complementary representations.
 
+Note that the package installs as `roman-ts` but is imported as `roman`.
+
+## Choosing S and alpha
+
+Practical guidance, following the paper's experiments:
+
+- **`alpha` is a cost knob, not a quantity to tune.** In the paper's benchmarks, no value in `{0, 0.25, 0.75}` differed significantly from the default `alpha=0.5`, and `alpha=0.25` matched it with roughly a quarter fewer pseudochannels. Use the default, or `alpha=0.25` when the channel count matters.
+- **Keep the finest windows at the scale of the discriminative structure.** `min_timesteps_per_channel` (the paper's `L_min`) caps the pyramid depth at `S* ~ 1 + floor(log2(L / L_min))`. Choose `L_min` so that windows still contain the local patterns the task depends on — windows shorter than the relevant unit (for example, a phoneme in audio) lose the gain.
+- **Select `S` on validation data when you can.** The best `S` is task- and backbone-dependent. In the paper, selecting `S` per dataset by 4-fold cross-validation on the training set turned a fixed `S=4` (a loss on average across the UCR archive) into a small significant gain, mostly by avoiding harmful settings; the procedure is conservative and often keeps `S=1`.
+- **Different `S` values give complementary representations.** When no validation data can be spared, a simple ensemble mixing models trained at different `S` values captures part of the same headroom.
+- **Efficiency comes with the operator.** Larger `S` shortens the processed time axis, which reduces inference time for ROCKET-style backbones regardless of the accuracy outcome.
+
 ## Example Notebook
 
 The notebook in [`notebooks/uea_example.ipynb`](notebooks/uea_example.ipynb) shows a full MiniRocket example on the UEA `EthanolConcentration` dataset:
@@ -102,12 +114,18 @@ ROMAN/
 ├── README.md
 ├── LICENSE
 ├── pyproject.toml
+├── images/
 ├── notebooks/
 │   └── uea_example.ipynb
-└── src/
-    └── roman/
-        ├── __init__.py
-        └── operator.py
+├── src/
+│   └── roman/
+│       ├── __init__.py
+│       └── operator.py
+├── tests/
+│   └── test_operator.py
+└── .github/
+    └── workflows/
+        └── ci.yml
 ```
 
 ## Main API
@@ -121,17 +139,18 @@ Supported input shapes:
 - `(n_instances, n_timepoints)` for univariate data
 - `(n_instances, n_variables, n_timepoints)` for multivariate data
 
-Supported scale-selection modes:
+Supported scale-selection modes (provide exactly one):
 
-- exact scale count with `S` (default)
+- exact scale count with `S` (the usual choice)
 - pseudochannel budget with `max_pseudochannels`
-- expected coverage target for ROCKET-like models with `N` (number of kernels) and `H` (target average kernels per channel)
+- expected coverage target for ROCKET-like models with `N` (the number of channel-subset draws the downstream transform performs) and `H` (the required expected number of draws covering each pseudochannel)
 
 Key hyperparameters:
 
 - `S` controls the pyramid depth and therefore the common base length `L_base`
-- `alpha` controls how densely each scale is tiled by overlapping windows
-- `min_timesteps_per_channel` (optional) Put an upper limit on S based on a minimum base length `L_base`
+- `alpha` (default `0.5`) controls how densely each scale is tiled by overlapping windows
+- `min_timesteps_per_channel` (default `32`) is the paper's `L_min`: it puts a lower limit on `L_base` and therefore an upper limit on `S`
+- `normalization` (default `True`) z-normalizes each channel with statistics estimated on the training data
 
 Useful fitted attributes:
 
@@ -147,17 +166,7 @@ Useful fitted attributes:
 
 ## Companion Reproduction Repository
 
-This repository is the library-first version of ROMAN. For the full experimental pipeline, see the companion reproduction repository:
-
-- `https://github.com/unknownscientist/ROMAN`
-
-That companion repository should host:
-
-- benchmark entrypoints
-- synthetic experiments
-- result aggregation scripts
-- figure-generation notebooks
-- appendix-table generation
+This repository is the library-first version of ROMAN. The full experimental pipeline behind the paper (benchmark entrypoints, synthetic experiments, result aggregation, figure and appendix-table generation) lives in a companion reproduction repository, whose link will be added here upon publication.
 
 Keeping those pieces separate helps this repository stay lightweight and focused on end users.
 
@@ -170,8 +179,9 @@ If you use ROMAN in your work, please cite the paper. The venue and final paper 
   title        = {ROMAN: A Multiscale Routing Operator for Convolutional Time Series Models},
   author       = {Uribarri, Gonzalo},
   year         = {2026},
-  note         = {[Venue to update]},
-  howpublished = {[Paper link to add]}
+  eprint       = {2604.02577},
+  archivePrefix = {arXiv},
+  howpublished = {arXiv:2604.02577}
 }
 ```
 
