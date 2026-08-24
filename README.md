@@ -80,7 +80,7 @@ print("Scale lengths:", roman.lengths_)
 print("Windows per scale:", roman.windows_)
 ```
 
-For a typical workflow, fit ROMAN on the training set, transform both train and test sets, and then pass the transformed tensors to your downstream classifier. The `S=1` case is exactly the identity baseline, so varying `S` gives a controlled family of complementary representations.
+For a typical workflow, fit ROMAN on the training set, transform both train and test sets, and then pass the transformed tensors to your downstream classifier. The `S=1` case returns the input unchanged (up to the optional channel normalization; set `normalization=False` for the exact identity), so varying `S` gives a controlled family of complementary representations.
 
 ## Example Notebook
 

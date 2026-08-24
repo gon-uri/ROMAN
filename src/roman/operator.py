@@ -293,7 +293,8 @@ class RomanOperator(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    - `S=1` is exactly the identity case.
+    - `S=1` returns the input unchanged up to the optional channel
+      normalization; set `normalization=False` for the exact identity.
     - When `normalization=True`, channel-wise mean and standard deviation are
       estimated from the training data before pyramid construction.
     - Downsampling uses the anti-aliasing filter `[1, 2, 1] / 4` followed by
