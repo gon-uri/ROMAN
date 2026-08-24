@@ -85,16 +85,21 @@ def choose_S_roman(
     L : int
         Original time-series length.
     min_timesteps_per_channel : int
-        Minimum allowed length for the coarsest scale.
+        Minimum allowed length for the coarsest scale. This is the paper's
+        `L_min`: together with `L` it caps the pyramid depth at
+        `S* ~ 1 + floor(log2(L / L_min))`.
     S_exact : int, optional
         Exact number of scales to request.
     max_pseudochannels : int, optional
         Maximum number of pseudochannels allowed after ROMAN.
     N : int, optional
-        Number of channel-combination draws used by the downstream ROCKET-style
-        transform. Required together with `H` in coverage mode.
+        Number of channel-subset draws performed by the downstream
+        ROCKET-style transform (for MiniRocket, the kernel-dilation
+        combinations that each sample a channel subset — not the feature
+        count). Required together with `H` in coverage mode.
     H : float, optional
-        Minimum expected coverage per pseudochannel. Required together with `N`.
+        Required expected number of draws that include each pseudochannel
+        (average coverage target). Required together with `N`.
     S_max : int, optional
         Optional hard cap on the explored number of scales.
 
@@ -256,6 +261,40 @@ class RomanOperator(BaseEstimator, TransformerMixin):
     This class implements the operator-level transformation studied in the
     paper. It is intended to be placed before a standard convolutional
     classifier rather than used as a classifier on its own.
+
+    Parameters
+    ----------
+    alpha : float, default=0.5
+        Window overlap fraction in `[0, 1)` (the paper's alpha). Controls how
+        densely each scale is tiled: 0.5 covers every interior sample of each
+        scale with exactly two windows; 0.25 yields roughly a quarter fewer
+        pseudochannels and was statistically indistinguishable from 0.5 in
+        the paper's benchmarks.
+    min_timesteps_per_channel : int, default=32
+        Minimum length of the coarsest scale (the paper's `L_min`). Caps the
+        pyramid depth at `S* ~ 1 + floor(log2(L / L_min))`; choose it so the
+        finest-scale windows still contain the local patterns the task
+        depends on.
+    normalization : bool, default=True
+        Estimate channel-wise mean and standard deviation on the training
+        data and z-normalize before building the pyramid.
+    S_max : int, optional
+        Hard cap on the number of scales explored during selection.
+    S : int, optional
+        Exact-scale mode: request exactly `S` scales (reduced with a warning
+        when the mobility constraint allows fewer). Exactly one of `S`,
+        `max_pseudochannels`, or the pair `(N, H)` must be provided.
+    max_pseudochannels : int, optional
+        Budget mode: select the largest `S` whose output stays within this
+        pseudochannel budget.
+    N : int, optional
+        Coverage mode (together with `H`): number of channel-subset draws
+        performed by the downstream ROCKET-style transform.
+    H : float, optional
+        Coverage mode (together with `N`): required expected number of draws
+        covering each pseudochannel.
+    eps : float, default=1e-8
+        Numerical floor for the normalization standard deviations.
 
     Inputs
     ------
