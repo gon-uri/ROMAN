@@ -266,10 +266,10 @@ class RomanOperator(BaseEstimator, TransformerMixin):
     ----------
     alpha : float, default=0.5
         Window overlap fraction in `[0, 1)` (the paper's alpha). Controls how
-        densely each scale is tiled: 0.5 covers every interior sample of each
-        scale with exactly two windows; 0.25 yields roughly a quarter fewer
-        pseudochannels and was statistically indistinguishable from 0.5 in
-        the paper's benchmarks.
+        densely each scale is tiled. At 0.5, scales containing multiple windows
+        have approximately double coverage away from their boundaries. Using
+        0.25 yields roughly a quarter fewer pseudochannels and was statistically
+        indistinguishable from 0.5 in the paper's benchmarks.
     min_timesteps_per_channel : int, default=32
         Minimum length of the coarsest scale (the paper's `L_min`). Caps the
         pyramid depth at `S* ~ 1 + floor(log2(L / L_min))`; choose it so the

@@ -1,0 +1,52 @@
+{
+  "dataset": "FaceFour",
+  "environment": {
+    "python": "3.12.14",
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "machine": "arm64",
+    "threads": 1,
+    "packages": {
+      "numpy": "2.3.5",
+      "pandas": "2.3.3",
+      "scipy": "1.17.1",
+      "scikit-learn": "1.7.2",
+      "sktime": "1.1.0",
+      "numba": "0.63.1",
+      "threadpoolctl": "3.6.0"
+    }
+  },
+  "summary": [
+    {
+      "ensemble": "Five S=1 models",
+      "members": 5,
+      "test_accuracy": 0.9431818181818182,
+      "correct": 83,
+      "n_test": 88,
+      "training_s": 0.6430030840019754,
+      "inference_s": 0.9576760419986385,
+      "inference_repetitions_s": [
+        0.9570262920024106,
+        0.9582945830006793,
+        0.9528102500007662,
+        0.9576760419986385,
+        0.9614626250004221
+      ]
+    },
+    {
+      "ensemble": "Mixed S=1,1,2,3,4",
+      "members": 5,
+      "test_accuracy": 1.0,
+      "correct": 88,
+      "n_test": 88,
+      "training_s": 0.46802395899794647,
+      "inference_s": 0.7196761670020351,
+      "inference_repetitions_s": [
+        0.7196761670020351,
+        0.7183117919994402,
+        0.7226665829984995,
+        0.7234635410022747,
+        0.7171015000021725
+      ]
+    }
+  ]
+}
