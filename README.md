@@ -93,6 +93,10 @@ Z_test = operator.transform(X_test)
 
 Inputs and outputs use `(cases, channels, time)`. For CinCECGTorso, S=4 changes `(40, 1, 1639)` into `(40, 26, 205)`: a shorter time axis with explicit scale and position channels. Channel normalization uses training statistics. S=1 preserves the input geometry; use `normalization=False` for the identity routing without normalization. The implementation returns float32 arrays.
 
+A real **FaceFour** series illustrates how the same input becomes a set of shorter channels at **S=2** and **S=3** (alpha=0.5). Colors identify scales; the lower diagrams show the change in array shape.
+
+![ROMAN applied to FaceFour: input 1 × 350, S=2 output 4 × 175, and S=3 output 11 × 88](images/roman_real_series.png)
+
 ![ROMAN scheme](images/ROMAN_scheme.jpg)
 
 ## Better ensembles with mixed scales
